@@ -307,7 +307,7 @@ void Instructions() {
 void Introduce() {
 	
 }
-/*void pause() {
+void pause() {
 	while (1) {
 		system("cls");
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED);
@@ -332,4 +332,4 @@ void Introduce() {
 			break;
 		}	
 	}
-}*/
+}
