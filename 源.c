@@ -19,15 +19,17 @@ typedef struct _Plane {						//∂®“Â∑…ª˙Ω·ππ
 	int speed;											//∑…––ÀŸ∂»
 	int Shapewidth, Shapehigh;			//∑…ª˙’ºæ›ø’º‰
 	char flag;											//∑…ª˙◊¥Ã¨
+	char hp;											//∑…ª˙—™¡ø
 } plane;
 void Menu(void);
 void Instructions();
 void Introduce();
+void pause();
 void print(point, plane, plane*);
 void shooting(point*);
 void move(plane*, point*);
 void enemy(plane*,int*);
-void bingo(plane*,point);
+void bingo(plane*,plane*,point);
 void Gotoxy(int x, int y);
 void HideCursor();
 int main() {
@@ -43,7 +45,8 @@ int main() {
 		.Shapewidth = sizeof(me.Shape[0]) / sizeof(me.Shape[0][0]),.Shapehigh = sizeof(me.Shape) / sizeof(me.Shape[0]),
 		.xy = {(width - sizeof(me.Shape[0]) / sizeof(me.Shape[0][0])) / 2,high / 2},
 		.speed = 0,
-		.flag = 1
+		.flag = 1,
+		.hp = 10,
 	};
 	srand((unsigned)time(NULL));
 	char shape[3][5][5] = { {
@@ -97,8 +100,8 @@ int main() {
 		move(&me,&shoot);
 		enemy(enemyplane,speed);
 		print(shoot,me,enemyplane);
-		bingo(enemyplane, shoot);
-		system("cls");
+		bingo(enemyplane, &me,shoot);
+        system("cls");
 	}
 	return 0;
 }								
@@ -118,13 +121,13 @@ void move(plane* pme, point* shoot)																			//øÿ÷∆º∫∑Ω∑…ª˙“∆∂Ø
 		switch (input) {
 		case 'w':
 		case'W':
-			if (pme->xy.y > 0) { 
-				pme->xy.y--; 
+			if (pme->xy.y > 0) {
+				pme->xy.y--;
 			}
 			break;
 		case's':
 		case'S':
-			if (pme->xy.y < high- pme->Shapehigh){
+			if (pme->xy.y < high - pme->Shapehigh) {
 				pme->xy.y++;
 			}
 			break;
@@ -136,7 +139,7 @@ void move(plane* pme, point* shoot)																			//øÿ÷∆º∫∑Ω∑…ª˙“∆∂Ø
 			break;
 		case'd':
 		case'D':
-			if (pme->xy.x < width- pme->Shapewidth) {
+			if (pme->xy.x < width - pme->Shapewidth) {
 				pme->xy.x++;
 			}
 			break;
@@ -144,6 +147,10 @@ void move(plane* pme, point* shoot)																			//øÿ÷∆º∫∑Ω∑…ª˙“∆∂Ø
 			shootflag = 1;
 			*shoot = pme->xy;
 			shoot->x += pme->Shapewidth / 2;
+			break;
+		case 27:
+			pause();
+			break;
 		}
 	}
 }
@@ -154,6 +161,17 @@ void enemy(plane* enemyplane,int* speed) {																//øÿ÷∆µ–∑Ω∑…ª˙µƒœ¬¬‰£¨
 			enemyplane->xy.x = rand() % (width - enemyplane->Shapewidth) + enemyplane->Shapewidth / 2;
 			enemyplane->xy.y = 0;
 			enemynum++;
+			switch (enemyplane->flag) {																			//÷ÿ÷√µ–∑Ω∑…ª˙—™¡ø
+			case 0:
+				enemyplane->hp = 3;
+				break;
+			case 1:
+				enemyplane->hp = 2;
+				break;
+			case 2:
+				enemyplane->hp = 1;
+				break;
+			}
 		};
 		if (*speed == enemyplane->speed) {
 			enemyplane->xy.y++;
@@ -184,22 +202,41 @@ void print(point shoot, plane me, plane* enemyplane) {											//‘⁄¥∞ø⁄œ‘ æ≥ˆΩ
 	for (int a = me.xy.x; a < me.xy.x + me.Shapewidth; a++) {
 		for (int b = me.xy.y; b < me.xy.y + me.Shapehigh; b++) {
 			Gotoxy(a, b);
-				printf("%c", me.Shape[b - me.xy.y][a - me.xy.x]);
+			printf("%c", me.Shape[b - me.xy.y][a - me.xy.x]);
 		}
 	}	
 }
-void bingo(plane* enemyplane, point shoot) {															//≈–∂œ◊”µØ «∑Ò√¸÷–
-	if (shootflag == 1) {
+void bingo(plane* enemyplane,plane*me, point shoot) {															//≈–∂œ◊”µØ√¸÷–£¨“‘º∞”Œœ∑Ω· ¯
 		plane* penemyplane = enemyplane;
 		for (int t = 0; t < enemynum; t++, enemyplane++) {
-			if (shoot.x >= enemyplane->xy.x && shoot.x <= (enemyplane->xy.x + enemyplane->Shapewidth) && shoot.y >= enemyplane->xy.y && shoot.y <= (enemyplane->xy.y + enemyplane->Shapewidth)) {
-				score++;
+			if (shootflag != 0) {
+				if (shoot.x >= enemyplane->xy.x && shoot.x <= (enemyplane->xy.x + enemyplane->Shapewidth) && shoot.y >= enemyplane->xy.y && shoot.y <= (enemyplane->xy.y + enemyplane->Shapewidth)) {
+					score++;
+					enemyplane->hp--;
+					shootflag = 0;
+				}
+			}
+			if (enemyplane->hp == 0) {
 				enemyplane->flag = 0;
 				enemynum--;
 			}
+			if (enemyplane->xy.y > width - 10) {																			
+				enemyplane->flag = 0;
+				enemynum--;
+				me->hp--;
+			}
+			if (me->hp == 0) {
+				system("cls");
+				printf("\n\n\n\n\n\t\tyou die");
+				char ch = 0;
+				ch = _getch();
+				while (ch < '1' || ch>'2' || ch != 27) {
+					printf("\n ‰»Î”–ŒÛ");
+					ch = _getch();
+				}
+			}
 		}
 		enemyplane = penemyplane;
-	}
 }
 void Gotoxy(int x, int y) {																									//øÿ÷∆π‚±Í“∆∂Ø
 	COORD pos;
@@ -215,19 +252,22 @@ void HideCursor(){																											//“˛≤ÿπ‚±Í
 	SetConsoleCursorInfo(handle, &cursor);
 }
 void Menu() {//÷˜≤Àµ•
-	while (1){
+	while (1) {
 		system("cls");
-		int s;
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 		printf("\n\n\n\n\n\t\t    ÷˜       ≤À       µ•\n\n");
 		printf("\n\n\t\t\t  ∑…ª˙¥Û’Ω\n\n");
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED);
 		printf("\t     ------------------------------------\n\n");
 		printf("\t\t       (1):ø™ º”Œœ∑\n\n");
 		printf("\t\t       (2):≤Ÿ◊˜ΩÈ…‹\n\n");
 		printf("\t\t       (3):”Œœ∑ΩÈ…‹\n\n");
 		printf("\t\t       (4):ÕÀ≥ˆ”Œœ∑\n\n");
 		printf("\t    ------------------------------------\n\n");
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 		printf("   ****************µ⁄“ª¥Œ«Îœ»π€ø¥≤Ÿ◊˜ΩÈ…‹****************\n\n");
 		printf("\t\t         «Î ‰»Î–Ú∫≈°£\n");
+		int s;
 		s = _getch();
 		while (s < '1' || s>'4'){
 			printf("\t\t ‰»Î”–ŒÛ£¨«Î÷ÿ–¬ ‰»Î°£\n");
@@ -242,13 +282,54 @@ void Menu() {//÷˜≤Àµ•
 		else{
 			int i = MessageBox(NULL, L"\n»∑∂®“™ÕÀ≥ˆ”Œœ∑¬£ø", L"ÕÀ≥ˆÃ· æ", MB_YESNO);
 			if (i == IDYES)
-				exit(0);
+			exit(0);
 		}
 	}
 }
 void Instructions() {
-	
+	system("cls");
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+	Gotoxy(26, 6);
+	printf("”Œœ∑≤Ÿ◊˜");
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED);
+	printf("\n\n\n\n\t     Ω¯––”Œœ∑«∞ŒÒ±ÿΩ´ ‰»Î∑®…Ë÷√Œ™”¢Œƒ£°£°£°");
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+	printf("\n\n\n\t\t  W,S,A,D∑÷±øÿ÷∆…œœ¬◊Û”“");
+	printf("\n\n\n\t\t\tø’∏Ò∑¢…‰◊”µØ");
+	printf("\n\n\n\n\t\t\t ”Œœ∑”‰øÏ£°");
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_BLUE);
+	printf("\n\n\n\n\n\n\t\t\t ∞¥ESC∑µªÿ");
+	char ch = 0;
+	do {
+		ch = _getch();
+	} while (ch != 27);
 }
 void Introduce() {
-
+	
 }
+/*void pause() {
+	while (1) {
+		system("cls");
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED);
+		Gotoxy(21, 10);
+		printf("*****”Œœ∑‘›Õ£*****");
+		printf("\n(1)≤Ÿ◊˜ΩÈ…‹");
+		printf("\n(2)Ω· ¯”Œœ∑");
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+		char ch = 0;
+		ch = _getch();
+		while (ch < '1' || ch>'2'||ch!=27){
+			printf("\n ‰»Î”–ŒÛ");
+			ch = _getch();
+		}
+		if (ch == '1') {
+			Instructions();
+		}else if(ch == '2') {
+			int i = MessageBox(NULL, L"\n»∑∂®“™ÕÀ≥ˆ”Œœ∑¬£ø", L"ÕÀ≥ˆÃ· æ", MB_YESNO);
+			if (i == IDYES)
+				exit(0);
+		}else if (ch == 27) {
+			break;
+		}	
+	}
+}*/
