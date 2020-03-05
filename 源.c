@@ -33,6 +33,7 @@ void bingo(plane*,plane*,point);
 void Gotoxy(int x, int y);
 void HideCursor();
 int main() {
+	printf("这是一个测试");
 	system("mode con cols=61 lines=40");
 	plane me = {
 		.Shape = {
