@@ -6,7 +6,6 @@
 #define width 61													//Éè¶¨´°¿Ú¿í¶È
 #define high 40													//´°¿Ú¸ß¶È
 #define MAX_enemy  10										//µĞÈË×î´óÊıÁ¿
-int shootflag = 1;
 int enemynum = 0;
 int score = 0;
 typedef struct _Point {
@@ -21,19 +20,22 @@ typedef struct _Plane {						//¶¨Òå·É»ú½á¹¹
 	char flag;											//·É»ú×´Ì¬
 	char hp;											//·É»úÑªÁ¿
 } plane;
+typedef struct _Bullet {
+	point xy;
+	char flag;
+} _bullet;
 void Menu(void);
 void Instructions();
 void Introduce();
 void pause();
-void print(point, plane, plane*);
-void shooting(point*);
-void move(plane*, point*);
+void print(_bullet*, plane, plane*);
+void shooting(_bullet*);
+void move(plane*, _bullet*,int*);
 void enemy(plane*,int*);
-void bingo(plane*,plane*,point);
+void bingo(plane*,plane*,_bullet*);
 void Gotoxy(int x, int y);
 void HideCursor();
 int main() {
-	printf("ÕâÊÇÒ»¸ö²âÊÔ");
 	system("mode con cols=61 lines=40");
 	plane me = {
 		.Shape = {
@@ -59,15 +61,11 @@ int main() {
 		{
 		{' ','*',' ','*',' ',},
 		{'*','*','*','*','*',},
-		{' ','*',' ','*',' ',},
-		{' ',' ','*',' ',' ',},
-		{' ',' ',' ',' ',' ',},},
+		{' ','*',' ','*',},
+		{' ',' ','*',},},
 		{
-		{'*','*','*',' ',' ',},
-		{' ','*',' ',' ',' ',},
-		{' ',' ',' ',' ',' ',},
-		{' ',' ',' ',' ',' ',},
-		{' ',' ',' ',' ',' ',},},
+		{'*','*','*',},
+		{' ','*',},},
 		};
 	plane enemyplane[MAX_enemy];
 	for (int i = 0; i < MAX_enemy; i++) {
@@ -91,30 +89,42 @@ int main() {
 			break;
 		}
 	}
-	point shoot = { 0,0 };
+	_bullet bullet[high];
+	for (int i = 0; i < high; i++) {
+		bullet[i].flag = 0;
+		bullet[i].xy.x = 0;
+		bullet[i].xy.y = 0;
+	}
+	int shootnum = 0;
 	int speed[10] = { 0 };
 	HideCursor();
 	/*¡ª¡ª¡ª¡ª¡ª¡ª¡ªÒÔÉÏÊÇ³õÊ¼»¯¡ª¡ª¡ª¡ª¡ª¡ª¡ª*/
 	Menu();
 	while (1) {
-		shooting(&shoot);
-		move(&me,&shoot);
+		shooting(bullet);
+		move(&me,bullet,&shootnum);
 		enemy(enemyplane,speed);
-		print(shoot,me,enemyplane);
-		bingo(enemyplane, &me,shoot);
-        system("cls");
+		print(bullet,me,enemyplane);
+		bingo(enemyplane, &me,bullet);
+		system("cls");
 	}
 	return 0;
 }								
-void shooting(point *shoot){																							//¿ØÖÆ×Óµ¯µÄÉÏÉı
-	if (shoot->y > 1) {
-		shoot->y--;
+void shooting(_bullet* bullet) {	//¿ØÖÆ×Óµ¯µÄÉÏÉı
+	_bullet* pbullet = bullet;
+	for (int i = 0; i < high; i++, bullet++) {
+		if (bullet->xy.y > 1) {
+			if (bullet->flag != 0) {
+				bullet->xy.y--;
+			}
+		}
+		else {
+			bullet->flag = 0;
+		}
 	}
-	else {
-		shootflag = 0;
-	}
+	bullet = pbullet;
 }
-void move(plane* pme, point* shoot)																			//¿ØÖÆ¼º·½·É»úÒÆ¶¯
+void move(plane* pme, _bullet* bullet,int *shootnum)																			//¿ØÖÆ¼º·½·É»úÒÆ¶¯
 {
 	char input;
 	if (_kbhit()) {
@@ -145,9 +155,13 @@ void move(plane* pme, point* shoot)																			//¿ØÖÆ¼º·½·É»úÒÆ¶¯
 			}
 			break;
 		case' ':
-			shootflag = 1;
-			*shoot = pme->xy;
-			shoot->x += pme->Shapewidth / 2;
+			if (*shootnum == high - 1) {
+			*shootnum = 0;
+			}
+			bullet[*shootnum].flag = 1;
+			bullet[*shootnum].xy = pme->xy;
+			bullet[*shootnum].xy.x += pme->Shapewidth / 2;
+			(*shootnum)++;
 			break;
 		case 27:
 			pause();
@@ -183,10 +197,12 @@ void enemy(plane* enemyplane,int* speed) {																//¿ØÖÆµĞ·½·É»úµÄÏÂÂä£¬
 		}
 	}
 }
-void print(point shoot, plane me, plane* enemyplane) {											//ÔÚ´°¿ÚÏÔÊ¾³ö½çÃæ
-	if (shootflag != 0) {
-	Gotoxy(shoot.x, shoot.y);
-	printf("%c", '|');
+void print(_bullet* bullet, plane me, plane* enemyplane) {	//ÔÚ´°¿ÚÏÔÊ¾³ö½çÃæ
+	for (int t = 0; t < high; t++, bullet++) {
+		if (bullet->flag != 0) {
+			Gotoxy(bullet->xy.x, bullet->xy.y);
+			printf("%c", '|');
+		}
 	}
 	plane* penemyplane = enemyplane;
 	for (int s = 0; s < enemynum; s++, enemyplane++) {
@@ -207,16 +223,20 @@ void print(point shoot, plane me, plane* enemyplane) {											//ÔÚ´°¿ÚÏÔÊ¾³ö½
 		}
 	}	
 }
-void bingo(plane* enemyplane,plane*me, point shoot) {															//ÅĞ¶Ï×Óµ¯ÃüÖĞ£¬ÒÔ¼°ÓÎÏ·½áÊø
+void bingo(plane* enemyplane,plane*me, _bullet* bullet) {															//ÅĞ¶Ï×Óµ¯ÃüÖĞ£¬ÒÔ¼°ÓÎÏ·½áÊø
 		plane* penemyplane = enemyplane;
 		for (int t = 0; t < enemynum; t++, enemyplane++) {
-			if (shootflag != 0) {
-				if (shoot.x >= enemyplane->xy.x && shoot.x <= (enemyplane->xy.x + enemyplane->Shapewidth) && shoot.y >= enemyplane->xy.y && shoot.y <= (enemyplane->xy.y + enemyplane->Shapewidth)) {
-					score++;
-					enemyplane->hp--;
-					shootflag = 0;
+			_bullet* pbullet = bullet;
+			for (int u = 0; u < high; u++, bullet++) {
+				if (bullet->flag != 0) {
+					if (bullet->xy.x >= enemyplane->xy.x && bullet->xy.x <= (enemyplane->xy.x + enemyplane->Shapewidth) && bullet->xy.y >= enemyplane->xy.y && bullet->xy.y <= (enemyplane->xy.y + enemyplane->Shapewidth)) {
+						score++;
+						enemyplane->hp--;
+						bullet->flag = 0;
+					}
 				}
 			}
+			bullet = pbullet;
 			if (enemyplane->hp == 0) {
 				enemyplane->flag = 0;
 				enemynum--;
@@ -290,23 +310,50 @@ void Menu() {//Ö÷²Ëµ¥
 void Instructions() {
 	system("cls");
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
-	Gotoxy(26, 6);
+	Gotoxy(26, 8);
 	printf("ÓÎÏ·²Ù×÷");
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED);
-	printf("\n\n\n\n\t     ½øĞĞÓÎÏ·Ç°Îñ±Ø½«ÊäÈë·¨ÉèÖÃÎªÓ¢ÎÄ£¡£¡£¡");
+	Gotoxy(13, 11);
+	printf("½øĞĞÓÎÏ·Ç°Îñ±Ø½«ÊäÈë·¨ÉèÖÃÎªÓ¢ÎÄ£¡£¡£¡");
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
-	printf("\n\n\n\t\t  W,S,A,D·Ö±ğ¿ØÖÆÉÏÏÂ×óÓÒ");
-	printf("\n\n\n\t\t\t¿Õ¸ñ·¢Éä×Óµ¯");
-	printf("\n\n\n\n\t\t\t ÓÎÏ·Óä¿ì£¡");
+	Gotoxy(19, 14);
+	printf("W,S,A,D·Ö±ğ¿ØÖÆÉÏÏÂ×óÓÒ");
+	Gotoxy(24, 16);
+	printf("¿Õ¸ñ·¢Éä×Óµ¯");
+	Gotoxy(25, 20);
+	printf(" ÓÎÏ·Óä¿ì£¡");
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_BLUE);
-	printf("\n\n\n\n\n\n\t\t\t °´ESC·µ»Ø");
+	Gotoxy(25, 26);
+	printf(" °´ESC·µ»Ø");
 	char ch = 0;
 	do {
 		ch = _getch();
 	} while (ch != 27);
 }
 void Introduce() {
-	
+	system("cls");
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY |FOREGROUND_GREEN);
+	Gotoxy(18,10);
+	printf("×÷ÕßÊÇ´óÒ»¼ÆËã»ú×¨ÒµÔÚ¶Á");
+	Gotoxy(17, 12);
+	printf("³Ã×Åº®¼ÙÊ±¼ä×ÔÑ§ÁËÒ»Ğ©CÓïÑÔ");
+	Gotoxy(13, 14);
+	printf("Ç°ºó¿Ä¿Ä°í°íĞ´°ë¸öÔÂ(ÊµÔÚÊÇÓĞĞ©Âı)");
+	Gotoxy(21, 16);
+	printf("²»¹ı×îºóÒ²ÊÇ½áÁËÎ²");
+	Gotoxy(13, 18);
+	printf("Èç¹ûÄúÔÚ´Ë³ÌĞòÖĞ·¢ÏÖÓĞbugÇë¶à¶àº£º­");
+	Gotoxy(15, 20);
+	printf("»òÕßÔÚgithubÉÏ»Ø¸´£¬ÎÒ»á¼°Ê±»Ø¸´");
+	Gotoxy(23, 22);
+	printf("¸ĞĞ»ÄúµÄÖ§³Ö£¡");
+	Gotoxy(27, 24);
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+	printf("ESC·µ»Ø");
+	char ch = 0;
+	do {
+		ch = _getch();
+	} while (ch != 27);
 }
 void pause() {
 	while (1) {
@@ -314,12 +361,14 @@ void pause() {
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED);
 		Gotoxy(21, 10);
 		printf("*****ÓÎÏ·ÔİÍ£*****");
-		printf("\n(1)²Ù×÷½éÉÜ");
-		printf("\n(2)½áÊøÓÎÏ·");
+		printf("\n\t\t   (1)²Ù×÷½éÉÜ");
+		printf("\n\t\t   (2)½áÊøÓÎÏ·");
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 		char ch = 0;
 		ch = _getch();
-		while (ch < '1' || ch>'2'||ch!=27){
+		while (ch < '1' || ch>'2' ){
+			if (ch == 27)
+				break;
 			printf("\nÊäÈëÓĞÎó");
 			ch = _getch();
 		}
