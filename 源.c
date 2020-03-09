@@ -265,8 +265,8 @@ void Initialization(plane* me, plane* enemyplane, _bullet* bullet, int* speed, i
 		{' ', ' ', '*', ' ', ' ', },
 		{ ' ','*',' ','*',' ', },
 		{ '*',' ','*',' ','*', },
-		{ ' ',' ','*',' ',' ', },
-		{ '*','*',' ','*','*', },
+		{ '*','*','*','*','*', },
+		{ ' ','*',' ','*',' ', },
 	};
 	memcpy(me->Shape, myshape, sizeof(myshape));
 	me->Shapewidth = sizeof(me->Shape[0]) / sizeof(me->Shape[0][0]);
